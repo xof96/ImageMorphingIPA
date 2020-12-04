@@ -17,7 +17,6 @@ t = 0.5
 buf_shape = []
 for i in range(3):
     buf_shape.append(max(o_shape[i], d_shape[i]))
-
 buf_img = np.zeros(shape=buf_shape, dtype=np.uint8)
 
 # if __name__ == '__main__':
@@ -64,7 +63,6 @@ for i in range(n_lines):
     len_pqa.append(np.sqrt(pqa[i][0] ** 2 + pqa[i][1] ** 2))
     len_pqb.append(np.sqrt(pqb[i][0] ** 2 + pqb[i][1] ** 2))
 
-
 # %%
 p, b, a = 0.5, 1.5, 0.001
 rows, cols, _ = buf_shape
@@ -76,15 +74,15 @@ for i in range(rows):
         xb_x = j
         xb_y = i
         for k in range(n_lines):
-            xpb_i = (xb_x - pb[i][0], xb_y - pb[i][1])
-            u = np.dot(xpb_i, pqb[i]) / (len_pqb[i] ** 2)
-            v = np.dot(xpb_i, per_pqb[i]) / len_pqb[i]
-            xa_x = pa[i][0] + u * pqa[i][0] + v * per_pqa[i][0] / len_pqa[i]
-            xa_y = pa[i][1] + u * pqa[i][1] + v * per_pqa[i][1] / len_pqa[i]
+            xpb_k = (xb_x - pb[k][0], xb_y - pb[k][1])
+            u = np.dot(xpb_k, pqb[k]) / (len_pqb[k] ** 2)
+            v = np.dot(xpb_k, per_pqb[k]) / len_pqb[k]
+            xa_x = pa[k][0] + u * pqa[k][0] + v * per_pqa[k][0] / len_pqa[k]
+            xa_y = pa[k][1] + u * pqa[k][1] + v * per_pqa[k][1] / len_pqa[k]
             di_x = xb_x - xa_x
             di_y = xb_y - xa_y
             dist = v
-            weight = (len_pqb[i] ** p / (a + dist)) ** b
+            weight = (len_pqb[k] ** p / (a + dist)) ** b
             d_sum_x += di_x * weight
             d_sum_y += di_y * weight
         xa_x = xb_x + d_sum_x / w_sum
@@ -95,8 +93,8 @@ for i in range(rows):
         g = xa_y - fy  # a
         h = xa_x - fx  # b
 
-
-
-
-
-
+        if fy < 0 or fx < 0 or fy + 1 > o_shape[0] or fx + 1 > o_shape[1]:
+            buf_img[xb_x, xb_y] = 0
+        else:
+            buf_img[xb_x, xb_y] = (1 - g) * ((1 - h) * img_origin[fy, fx] + h * img_origin[fy, fx + 1]) * g * (
+                    (1 - h) * img_origin[fy + 1, fx] + h * img_origin[fy + 1, fx + 1])
