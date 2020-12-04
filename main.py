@@ -1,4 +1,5 @@
 from utils.utils import imread
+import numpy as np
 import matplotlib.pyplot as plt
 
 img_o_path = 'assets/glass/vaso.jpg'
@@ -16,6 +17,8 @@ t = 0.5
 buf_shape = []
 for i in range(3):
     buf_shape.append(max(o_shape[i], d_shape[i]))
+
+buf_img = np.zeros(shape=buf_shape, dtype=np.uint8)
 
 # if __name__ == '__main__':
 # %%
@@ -40,13 +43,60 @@ with open('data/glass_lines.txt', 'r') as ref_lines:
         pb.append(curr_pb)
         qb.append(curr_qb)
 
-# Calcuating PQ and PQ'
+# %%
+# Calculating PQ and PQ'
 pqa = []
 pqb = []
 for i in range(n_lines):
     pqa.append((qa[i][0] - pa[i][0], qa[i][1] - pa[i][1]))
     pqb.append((qb[i][0] - pb[i][0], qb[i][1] - pb[i][1]))
 
+per_pqa = []
+per_pqb = []
+for i in range(n_lines):
+    per_pqa.append((pqa[i][1], -1 * pqa[i][0]))
+    per_pqb.append((pqb[i][1], -1 * pqb[i][0]))
+
+# %%
+len_pqa = []
+len_pqb = []
+for i in range(n_lines):
+    len_pqa.append(np.sqrt(pqa[i][0] ** 2 + pqa[i][1] ** 2))
+    len_pqb.append(np.sqrt(pqb[i][0] ** 2 + pqb[i][1] ** 2))
+
+
+# %%
+p, b, a = 0.5, 1.5, 0.001
 rows, cols, _ = buf_shape
 for i in range(rows):
     for j in range(cols):
+        d_sum_x = 0
+        d_sum_y = 0
+        w_sum = 0
+        xb_x = j
+        xb_y = i
+        for k in range(n_lines):
+            xpb_i = (xb_x - pb[i][0], xb_y - pb[i][1])
+            u = np.dot(xpb_i, pqb[i]) / (len_pqb[i] ** 2)
+            v = np.dot(xpb_i, per_pqb[i]) / len_pqb[i]
+            xa_x = pa[i][0] + u * pqa[i][0] + v * per_pqa[i][0] / len_pqa[i]
+            xa_y = pa[i][1] + u * pqa[i][1] + v * per_pqa[i][1] / len_pqa[i]
+            di_x = xb_x - xa_x
+            di_y = xb_y - xa_y
+            dist = v
+            weight = (len_pqb[i] ** p / (a + dist)) ** b
+            d_sum_x += di_x * weight
+            d_sum_y += di_y * weight
+        xa_x = xb_x + d_sum_x / w_sum
+        xa_y = xb_y + d_sum_y / w_sum
+
+        fy = np.floor(xa_y)  # p
+        fx = np.floor(xa_x)  # q
+        g = xa_y - fy  # a
+        h = xa_x - fx  # b
+
+
+
+
+
+
